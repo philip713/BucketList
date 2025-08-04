@@ -8,6 +8,7 @@
 import Foundation
 import MapKit
 import CoreLocation
+import LocalAuthentication
 
 extension ContentView{
     @Observable
@@ -15,6 +16,9 @@ extension ContentView{
         private(set) var locations: [Location]
         var selectedPlace: Location?
         let savePath = URL.documentsDirectory.appending(path: "SavedPlaces")
+        var isUnlocked = false
+        var showLoginError = false
+        var showBiometricsError = false
         init() {
             do{
                 let data = try Data(contentsOf: savePath)
@@ -43,6 +47,25 @@ extension ContentView{
                 try data.write(to: savePath, options: [.atomic, .completeFileProtection])
             } catch {
                 print("unable to dave data")
+            }
+        }
+        
+        func authenticate(){
+            let context = LAContext()
+            var error: NSError?
+            if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error){
+                let reason = "Please authenticate yourself tyo unlock"
+                context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason){success, authenticationError in
+                    if success{
+                        self.showLoginError = false
+                        self.showBiometricsError = false
+                        self.isUnlocked = true
+                    }  else {
+                        self.showLoginError = true
+                    }
+                }
+            } else {
+                self.showBiometricsError = true
             }
         }
     }
